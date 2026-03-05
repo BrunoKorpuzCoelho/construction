@@ -32,7 +32,7 @@
 
 | # | Status | Priority | Description | Commit |
 |---|:------:|:--------:|-------------|:------:|
-| 1 | 🔍 | 🔴 | BOQ import replace logic — when importing a smaller file, existing rows are not cleared beforehand, causing leftover lines to remain in the editor | 43087af |
+| 1 | ✅ | 🔴 | BOQ import replace logic — when importing a smaller file, existing rows are not cleared beforehand, causing leftover lines to remain in the editor | 43087af |
 
 ---
 
