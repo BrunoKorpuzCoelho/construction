@@ -32,7 +32,26 @@ export class BOQEditorAction extends Component {
         this.notification  = useService("notification");
         this.actionService = useService("action");
         this.aiScrollRef   = useRef("aiScroll");
-        this.boqId = this.props.action?.context?.boq_id;
+
+        // On normal navigation: boq_id comes from action context.
+        // On F5 / direct URL load: context is lost.
+        //   • First try action.state (persisted by updateActionState).
+        //   • Fallback: parse from the URL pathname.
+        //     URL pattern: /odoo/action-NNN/<boq_id>/action-construction_boq.editor
+        const _urlBoqId = (() => {
+            const m = window.location.pathname.match(
+                /\/(\d+)\/action-construction_boq\.editor/);
+            return m ? parseInt(m[1], 10) : null;
+        })();
+
+        this.boqId = this.props.action?.context?.boq_id
+                  || this.props.action?.state?.boq_id
+                  || _urlBoqId;
+
+        // Persist boq_id into URL state so future F5s restore via action.state.
+        if (this.boqId) {
+            this.props.updateActionState?.({ boq_id: this.boqId });
+        }
 
         this.state = useState({
             loading: true,
@@ -91,6 +110,11 @@ export class BOQEditorAction extends Component {
 
     // ── Load tree ──────────────────────────────────────────────────────────
     async _loadTree() {
+        if (!this.boqId) {
+            this.notification.add("No BOQ selected. Please open the editor from a BOQ record.", { type: "warning" });
+            this.state.loading = false;
+            return;
+        }
         try {
             const tree = await this._rpc("/construction_boq/load_tree", {
                 boq_id: this.boqId });
