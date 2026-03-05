@@ -34,7 +34,7 @@
 | 1 | ⏳ | 🟡 | View archived products (soft delete) in BOQ Editor view | — |
 | 2 | ⏳ | 🟡 | Re-add BOQ group selector in the Access Rights tab | — |
 | 3 | ⏳ | 🟢 | Remove preview step from the BOQ import wizard | — |
-| 4 | ⏳ | 🔴 | Fix F5 refresh issue — application fails to reload correctly | — |
+| 4 | ✅ | 🔴 | Fix F5 refresh issue — application fails to reload correctly | 9fb87ec |
 | 5 | ⏳ | 🟡 | Trigger automatic refresh after BOQ import to display new records | — |
 | 6 | ⏳ | 🟡 | Validate imported template fields during preview and raise explicit `UserError` on failure | — |
 | 7 | ⏳ | 🟢 | Show progress bar during preview loading and import processing | — |
