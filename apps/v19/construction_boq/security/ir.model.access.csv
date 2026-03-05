@@ -1,0 +1,15 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_obra_user,construction.obra user,model_construction_obra,construction_boq.group_boq_user,1,0,0,0
+access_obra_editor,construction.obra editor,model_construction_obra,construction_boq.group_boq_editor,1,1,1,0
+access_obra_manager,construction.obra manager,model_construction_obra,construction_boq.group_boq_manager,1,1,1,1
+access_boq_user,construction.boq user,model_construction_boq,construction_boq.group_boq_user,1,0,0,0
+access_boq_editor,construction.boq editor,model_construction_boq,construction_boq.group_boq_editor,1,1,1,0
+access_boq_manager,construction.boq manager,model_construction_boq,construction_boq.group_boq_manager,1,1,1,1
+access_capitulo_user,construction.boq.capitulo user,model_construction_boq_capitulo,construction_boq.group_boq_user,1,0,0,0
+access_capitulo_editor,construction.boq.capitulo editor,model_construction_boq_capitulo,construction_boq.group_boq_editor,1,1,1,1
+access_subcap_user,construction.boq.subcapitulo user,model_construction_boq_subcapitulo,construction_boq.group_boq_user,1,0,0,0
+access_subcap_editor,construction.boq.subcapitulo editor,model_construction_boq_subcapitulo,construction_boq.group_boq_editor,1,1,1,1
+access_artigo_user,construction.boq.artigo user,model_construction_boq_artigo,construction_boq.group_boq_user,1,0,0,0
+access_artigo_editor,construction.boq.artigo editor,model_construction_boq_artigo,construction_boq.group_boq_editor,1,1,1,1
+access_export_wizard,boq export wizard,model_construction_boq_export_wizard,construction_boq.group_boq_user,1,1,1,1
+access_import_wizard,boq import wizard,model_construction_boq_import_wizard,construction_boq.group_boq_editor,1,1,1,1

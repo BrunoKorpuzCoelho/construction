@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_boq" model="ir.actions.report">
+        <field name="name">Mapa de Quantidades (PDF)</field>
+        <field name="model">construction.boq</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_boq.report_boq_document</field>
+        <field name="report_file">construction_boq.report_boq_document</field>
+        <field name="print_report_name">'BOQ_%s_%s' % (object.obra_id.ref_interna, object.revision_label)</field>
+        <field name="binding_model_id" ref="model_construction_boq"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

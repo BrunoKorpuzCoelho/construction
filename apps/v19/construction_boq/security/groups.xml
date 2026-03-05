@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Odoo 19: res.groups no longer has 'category_id'.
+        Groups are defined without category — they still appear in
+        Settings > Users under the implied group hierarchy.
+    -->
+
+    <!-- User: read shared BOQs -->
+    <record id="group_boq_user" model="res.groups">
+        <field name="name">Construction BOQ / User</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Editor: create and edit draft BOQs -->
+    <record id="group_boq_editor" model="res.groups">
+        <field name="name">Construction BOQ / Editor</field>
+        <field name="implied_ids" eval="[(4, ref('construction_boq.group_boq_user'))]"/>
+    </record>
+
+    <!-- Manager: share, archive, create revisions -->
+    <record id="group_boq_manager" model="res.groups">
+        <field name="name">Construction BOQ / Manager</field>
+        <field name="implied_ids" eval="[(4, ref('construction_boq.group_boq_editor'))]"/>
+    </record>
+
+</odoo>
