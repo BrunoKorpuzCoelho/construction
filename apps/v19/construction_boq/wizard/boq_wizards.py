@@ -350,12 +350,12 @@ class BOQImportWizard(models.TransientModel):
                 # Could be cap or sub based on indentation / code pattern
                 code = vals[0]
                 name = vals[1] if len(vals) > 1 else ''
-                if re.match(r'^\d{2}$', code.strip()):
+                if re.match(r'^\d{1,3}$', code.strip()):
                     current_cap_code = code.strip()
                     current_cap_name = name.strip()
                     current_sub_code = ''
                     current_sub_name = ''
-                elif re.match(r'^\d{2}\.\d{2}$', code.strip()):
+                elif re.match(r'^\d{1,3}\.\d{2}$', code.strip()):
                     current_sub_code = code.strip()
                     current_sub_name = name.strip()
                 continue
@@ -373,7 +373,7 @@ class BOQImportWizard(models.TransientModel):
                     continue
 
                 # Infer cap/sub from code if not already set
-                if code and re.match(r'^\d{2}\.\d{2}\.\d{2}', code):
+                if code and re.match(r'^\d{1,3}\.\d{2}\.\d{1,4}', code):
                     parts = code.split('.')
                     if not current_cap_code:
                         current_cap_code = parts[0]

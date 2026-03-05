@@ -31,13 +31,13 @@
 
 | # | Status | Priority | Description | Commit |
 |---|:------:|:--------:|-------------|:------:|
-| 1 | ⏳ | 🟡 | View archived products (soft delete) in BOQ Editor view | — |
-| 2 | ⏳ | 🟡 | Re-add BOQ group selector in the Access Rights tab | — |
+| 1 | ⏳ | 🟡 | View archived products (soft delete) in BOQ Editor view, and the option to archive in the lines that changes the is_active field to false | — |
+| 2 | ✅ | 🟡 | Re-add BOQ group selector in the Access Rights tab | — |
 | 3 | ⏳ | 🟢 | Remove preview step from the BOQ import wizard | — |
 | 4 | ✅ | 🔴 | Fix F5 refresh issue — application fails to reload correctly | 9fb87ec |
 | 5 | ⏳ | 🟡 | Trigger automatic refresh after BOQ import to display new records | — |
 | 6 | ⏳ | 🟡 | Validate imported template fields during preview and raise explicit `UserError` on failure | — |
-| 7 | ⏳ | 🟢 | Show progress bar during preview loading and import processing | — |
+| 7 | ⏳ | 🟢 | Show progress bar during import processing | — |
 | 8 | ⏳ | 🟢 | Display elapsed time per operation — preview load time and total import duration | — |
 
 ---
