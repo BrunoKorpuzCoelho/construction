@@ -1,0 +1,504 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Construction BOQ Editor — Odoo 19 native look
+   Uses Odoo 19 variables where possible; minimal custom overrides
+═══════════════════════════════════════════════════════════════════ */
+
+// Odoo 19 palette
+$o-brand:     #714B67;
+$o-action:    #017E84;  // Odoo 19 primary action teal
+$navy:        #1B2A3B;
+$navy-mid:    #263545;
+$navy-light:  #334155;
+$slate:       #64748B;
+$line:        #E2E8F0;
+$bg-page:     #F8F9FA;    // Odoo's default app background
+$bg-white:    #FFFFFF;
+$text:        #212529;
+$text-muted:  #6C757D;
+$green:       #28A745;
+$red:         #DC3545;
+$blue-light:  #EFF6FF;
+$blue-mid:    #DBEAFE;
+$ai-bg:       #0F1923;
+
+@keyframes spin      { to { transform: rotate(360deg); } }
+@keyframes dotbounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: .3; }
+    40%            { transform: translateY(-5px); opacity: 1; }
+}
+
+// ── Root ──────────────────────────────────────────────────────────
+.boq-root {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 46px); // 46px = Odoo 19 navbar height
+    background: $bg-page;
+    font: 13px/1.45 'Inter', 'Segoe UI', system-ui, sans-serif;
+    color: $text;
+    overflow: hidden;
+}
+
+// ── Splash / loading ──────────────────────────────────────────────
+.boq-splash {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    color: $text-muted; font-size: 14px;
+    i { color: #FFC107; }
+    p { margin: 0; }
+}
+
+.boq-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid $line; border-top-color: $o-brand;
+    border-radius: 50%; animation: spin .7s linear infinite;
+}
+.boq-spinner-sm {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: middle;
+}
+
+// ── Top bar — blends with Odoo's control panel style ─────────────
+.boq-topbar {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 46px;
+    background: $bg-white;
+    border-bottom: 1px solid $line;
+    flex-shrink: 0;
+    gap: 12px;
+
+    .boq-app-icon {
+        width: 32px; height: 32px;
+        background: $o-brand;
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .boq-tb-left {
+        display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+    }
+
+    .boq-tb-info {
+        display: flex; align-items: center; gap: 6px; min-width: 0;
+        .boq-tb-project { font-weight: 600; color: $text; white-space: nowrap; }
+        .boq-tb-sep     { color: $text-muted; }
+        .boq-tb-name    { color: $text-muted; white-space: nowrap; overflow: hidden;
+                          text-overflow: ellipsis; max-width: 200px; }
+        .boq-state-pill {
+            padding: 2px 8px; border-radius: 20px;
+            font-size: 11px; font-weight: 600; white-space: nowrap;
+            &.draft  { background: #FFF3CD; color: #856404; }
+            &.shared { background: #D1ECF1; color: #0C5460; }
+            &.archived { background: $line; color: $text-muted; }
+        }
+    }
+
+    .boq-tb-actions {
+        display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+}
+
+// ── Button overrides to match Odoo 19 ─────────────────────────────
+.boq-topbar .btn { font-size: 12px; padding: 4px 10px; }
+.boq-topbar .btn-primary { background: $o-action; border-color: $o-action; }
+.boq-topbar .btn-primary:hover { background: darken($o-action, 8%); }
+.boq-btn-main {
+    background: $o-action !important; border-color: $o-action !important;
+    color: #fff;
+}
+.boq-divider {
+    width: 1px; height: 20px; background: $line; flex-shrink: 0;
+}
+.boq-stock-toggle {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; color: $text-muted; cursor: pointer;
+    white-space: nowrap;
+    input { cursor: pointer; }
+    &:hover { color: $text; }
+}
+.boq-ai-btn {
+    background: $o-brand; border: 1px solid darken($o-brand, 10%);
+    color: #fff; border-radius: 4px;
+    &:hover { background: darken($o-brand, 8%) !important; }
+    &.active {
+        background: #fff !important; color: $o-brand !important;
+        border-color: $o-brand !important; box-shadow: 0 0 0 2px $o-brand;
+    }
+}
+
+// ── 3-column body ─────────────────────────────────────────────────
+.boq-body {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    flex: 1;
+    overflow: hidden;
+    transition: grid-template-columns .2s ease;
+    &.has-ai { grid-template-columns: 260px 1fr 340px; }
+}
+
+// ── Left tree ─────────────────────────────────────────────────────
+.boq-tree {
+    background: $navy;
+    display: flex; flex-direction: column;
+    border-right: 1px solid #243040;
+    overflow: hidden;
+
+    .boq-tree-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid #243040;
+        font: 700 9px/1 monospace; letter-spacing: 2px; color: #4A6080;
+    }
+
+    .boq-icon-btn {
+        background: rgba(255,255,255,.08); border: none;
+        color: #60A5FA; width: 20px; height: 20px;
+        border-radius: 3px; cursor: pointer; font-size: 14px; line-height: 1;
+        &:hover { background: rgba(96,165,250,.2); }
+    }
+
+    .boq-tree-scroll {
+        flex: 1; overflow-y: auto;
+        &::-webkit-scrollbar { width: 4px; }
+        &::-webkit-scrollbar-thumb { background: $navy-light; border-radius: 2px; }
+    }
+
+    .boq-sec-row {
+        display: flex; align-items: center; gap: 5px;
+        padding: 6px 10px; cursor: pointer;
+        border-left: 3px solid transparent;
+        transition: background .1s;
+
+        &:hover   { background: #1F3045; }
+        &.sel     { background: #1E3A5F; border-left-color: #3B82F6; }
+        &.is-group { }
+
+        &.depth-0 {
+            .boq-sec-text b    { color: #60A5FA; font-size: 11px; }
+            .boq-sec-text span { color: #94A3B8; font-size: 11px; }
+        }
+        &.depth-1 {
+            .boq-sec-text b    { color: #67E8F9; font-size: 11px; }
+            .boq-sec-text span { color: #64748B; font-size: 11px; }
+        }
+        &.depth-2, &.depth-3, &.depth-4 {
+            .boq-sec-text b    { color: #94A3B8; font-size: 10px; }
+            .boq-sec-text span { color: #475569; font-size: 10px; }
+        }
+
+        .boq-chevron   { color: #3B82F6; font-size: 11px; flex-shrink: 0; }
+        .boq-leaf-icon { color: #4A6080; font-size: 10px; flex-shrink: 0; }
+
+        .boq-sec-text {
+            flex: 1; min-width: 0;
+            b    { display: block; }
+            span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        }
+        .boq-sec-val { font-size: 10px; color: #3B82F6; white-space: nowrap; flex-shrink: 0; }
+        .boq-sec-cnt { font-size: 10px; color: #4A6080; flex-shrink: 0; }
+
+        .boq-addsec-btn {
+            background: rgba(96,165,250,.1); border: 1px solid rgba(96,165,250,.25);
+            color: #60A5FA; width: 18px; height: 18px;
+            border-radius: 3px; cursor: pointer; font-size: 13px; line-height: 1;
+            flex-shrink: 0; display: none;
+            align-items: center; justify-content: center;
+        }
+        &:hover .boq-addsec-btn { display: inline-flex; }
+    }
+
+    .boq-tree-foot {
+        padding: 10px 12px;
+        background: #08111A;
+        border-top: 1px solid #1A2535;
+        .boq-grand-lbl { display: block; font: 700 9px monospace; letter-spacing: 1px; color: #4A6080; }
+        .boq-grand-val { font-size: 16px; font-weight: 800; color: #E2E8F0; }
+    }
+}
+
+// ── Centre content ────────────────────────────────────────────────
+.boq-content {
+    display: flex; flex-direction: column; overflow: hidden;
+    background: $bg-page;
+
+    // Control bar (breadcrumb + search)
+    .boq-content-bar {
+        display: flex; align-items: center; gap: 12px;
+        padding: 7px 14px;
+        background: $bg-white;
+        border-bottom: 1px solid $line;
+        flex-shrink: 0;
+
+        .boq-breadcrumb {
+            flex: 1; font-size: 12px; min-width: 0;
+            .bc-hint { color: $text-muted; font-style: italic; }
+            .bc-cap  { color: $text-muted; b { color: $text; } }
+            .bc-arrow{ color: #CBD5E1; margin: 0 5px; }
+            .bc-sub  { color: $o-action; font-weight: 600;
+                       b { color: darken($o-action, 10%); } }
+        }
+
+        .boq-search-wrap {
+            display: flex; align-items: center; gap: 6px;
+            .boq-search-icon { color: $text-muted; font-size: 12px; }
+            .boq-search-inp {
+                border: 1px solid $line; border-radius: 4px;
+                padding: 4px 8px; font-size: 12px; width: 180px;
+                &:focus { outline: none; border-color: $o-action; }
+            }
+            .boq-art-cnt { font-size: 11px; color: $text-muted; white-space: nowrap; }
+        }
+    }
+
+    // Sub-chapter tabs
+    .boq-subtabs {
+        display: flex; flex-wrap: wrap; gap: 3px;
+        padding: 5px 12px;
+        background: $blue-mid;
+        border-bottom: 1px solid #BFDBFE;
+        flex-shrink: 0;
+
+        .boq-subtab {
+            background: transparent; border: 1px solid transparent;
+            color: #1D4ED8; font-size: 11px; padding: 3px 10px;
+            border-radius: 4px; cursor: pointer;
+            .subtab-cnt { color: $text-muted; margin-left: 2px; }
+            &:hover       { background: #fff; border-color: #BFDBFE; }
+            &.active      { background: $o-action; color: #fff; border-color: $o-action;
+                            font-weight: 600;
+                            .subtab-cnt { color: rgba(255,255,255,.7); } }
+            &.add         { border: 1px dashed #CBD5E1; color: $text-muted;
+                            &:hover { border-color: $o-action; color: $o-action; } }
+        }
+    }
+
+    // Table
+    .boq-table-wrap { flex: 1; overflow: auto; }
+
+    .boq-table {
+        width: 100%; border-collapse: collapse; table-layout: fixed;
+
+        // Sticky header
+        thead tr {
+            background: $navy-mid; position: sticky; top: 0; z-index: 4;
+            th {
+                padding: 7px 6px; font: 700 9px/1 monospace;
+                color: #94A3B8; letter-spacing: 1px; text-transform: uppercase;
+                border-right: 1px solid $navy-light; white-space: nowrap;
+                user-select: none;
+                &.c { text-align: center; }
+                &.r { text-align: right; }
+            }
+        }
+
+        // Column widths
+        .col-code  { width: 86px; }
+        .col-uom   { width: 65px; }
+        .col-qty   { width: 100px; }
+        .col-pu    { width: 110px; }
+        .col-total { width: 120px; }
+        .col-stock { width: 70px; }
+        .col-obs   { width: 120px; }
+        .col-del   { width: 26px; }
+
+        tbody {
+            tr {
+                border-bottom: 1px solid #F1F5F9;
+                &:hover { background: $blue-light !important; }
+            }
+            .row-even { background: $bg-white; }
+            .row-odd  { background: #FAFBFC; }
+            td { padding: 0; vertical-align: middle;
+                 border-right: 1px solid #F1F5F9; }
+        }
+
+        .td-center { text-align: center; padding: 20px; color: $text-muted; font-size: 12px; }
+        .td-empty  {
+            text-align: center; padding: 30px; color: $text-muted; font-size: 13px;
+            a { color: $o-action; cursor: pointer; text-decoration: underline; }
+        }
+        .td-uom    { text-align: center; }
+        .td-total  {
+            text-align: right; padding-right: 8px;
+            font-size: 12px; font-weight: 600; color: $text;
+        }
+        .td-stock  { text-align: center; }
+        .td-del    { text-align: center; }
+    }
+
+    // ── Cell inputs ──────────────────────────────────────────────
+    .cell-inp {
+        width: 100%; height: 28px;
+        border: none; background: transparent;
+        font: 12px/1 'Inter', sans-serif; padding: 0 6px;
+        color: $text; outline: none;
+        &:hover   { background: $blue-light; }
+        &:focus   { background: $blue-light; outline: 1px solid $o-action; }
+        &.num     { text-align: right; }
+    }
+    .cell-ro {
+        display: block; padding: 0 6px; font-size: 12px; line-height: 28px;
+        &.num { text-align: right; }
+    }
+    .boq-uom-sel {
+        width: 100%; height: 28px; border: none; background: $blue-light;
+        font: 600 11px/1 sans-serif; color: #1D4ED8; text-align: center;
+        cursor: pointer; padding: 0; outline: none;
+        &:hover { background: $blue-mid; }
+        &:focus { outline: 1px solid $o-action; }
+    }
+    .uom-ro { display: block; text-align: center; font-size: 11px; color: #1D4ED8; font-weight: 600; }
+
+    .stock-pill {
+        display: inline-block; padding: 1px 6px; border-radius: 3px;
+        font: 600 10px/1 sans-serif; margin: 2px;
+        &.in  { background: #D4EDDA; color: #155724; }
+        &.out { background: #F8D7DA; color: #721C24; }
+    }
+    .stock-na { color: #CBD5E1; font-size: 11px; }
+
+    .btn-del {
+        background: none; border: none; color: #CBD5E1;
+        cursor: pointer; font-size: 11px; padding: 0 5px; width: 100%;
+        &:hover { color: $red; }
+    }
+
+    // ── Footer ───────────────────────────────────────────────────
+    .boq-foot {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 7px 14px;
+        background: $navy;
+        border-top: 2px solid $navy-mid;
+        flex-shrink: 0;
+
+        .boq-foot-left { min-width: 120px; }
+
+        .boq-add-row-btn {
+            background: rgba(96,165,250,.1);
+            border: 1px dashed #3B82F6;
+            color: #60A5FA; font-size: 11px;
+            &:hover { background: rgba(96,165,250,.2); }
+        }
+
+        .boq-foot-pag {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: #94A3B8;
+            .btn { background: rgba(255,255,255,.08); border: none;
+                   color: #94A3B8; padding: 2px 7px;
+                   &:disabled { opacity: .3; cursor: default; }
+                   &:hover:not(:disabled) { background: rgba(255,255,255,.15); } }
+        }
+
+        .boq-foot-totals {
+            display: flex; align-items: center; gap: 10px;
+            .ft-lbl   { font-size: 10px; color: #4A6080; letter-spacing: .5px; }
+            .ft-val   { font-size: 13px; color: #93C5FD; font-weight: 700; }
+            .ft-grand { font-size: 17px; color: #E2E8F0; font-weight: 800; }
+        }
+    }
+}
+
+// ── AI assistant panel ────────────────────────────────────────────
+.boq-ai {
+    background: $ai-bg;
+    border-left: 1px solid #1E293B;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+
+    .ai-head {
+        display: flex; align-items: center; gap: 8px;
+        padding: 11px 14px;
+        background: linear-gradient(135deg, #1E1B4B, #312E81);
+        color: #fff; font: 600 13px/1 sans-serif; flex-shrink: 0;
+        i { color: #A5B4FC; }
+        .ai-close {
+            margin-left: auto; background: rgba(255,255,255,.1); border: none;
+            color: #fff; width: 22px; height: 22px; border-radius: 50%;
+            cursor: pointer; font-size: 11px;
+            &:hover { background: rgba(255,255,255,.25); }
+        }
+    }
+
+    .ai-msgs {
+        flex: 1; overflow-y: auto; padding: 10px;
+        display: flex; flex-direction: column; gap: 8px;
+        &::-webkit-scrollbar { width: 3px; }
+        &::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 2px; }
+    }
+
+    .ai-msg {
+        display: flex;
+        &.user      { justify-content: flex-end; }
+        &.assistant { justify-content: flex-start; }
+    }
+
+    .ai-bubble {
+        max-width: 94%; padding: 8px 12px; border-radius: 12px;
+        font-size: 12px; line-height: 1.5;
+        .ai-msg.user      & { background: #4F46E5; color: #fff;
+                               border-bottom-right-radius: 3px; }
+        .ai-msg.assistant & { background: #1E293B; color: #CBD5E1;
+                               border-bottom-left-radius: 3px; }
+        ul { margin: 4px 0 4px 14px; padding: 0; li { margin: 2px 0; } }
+        strong, b { color: #93C5FD; }
+        code { background: #0F172A; padding: 1px 5px; border-radius: 3px;
+               font-size: 10px; color: #7DD3FC; }
+        .ai-ts {
+            margin-top: 4px; font-size: 9px; color: #475569;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .src-pill {
+            padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 700;
+            &.odoo    { background: #0F4C43; color: #6EE7B7; }
+            &.openai  { background: #1A2F1A; color: #86EFAC; }
+            &.builtin { background: #1E1B4B; color: #A5B4FC; }
+        }
+    }
+
+    .ai-typing {
+        display: flex; gap: 5px; padding: 8px 12px;
+        span {
+            width: 7px; height: 7px; background: #4F46E5; border-radius: 50%;
+            animation: dotbounce 1.2s ease-in-out infinite;
+            &:nth-child(2) { animation-delay: .15s; }
+            &:nth-child(3) { animation-delay: .3s; }
+        }
+    }
+
+    .ai-quick {
+        padding: 7px 10px; border-top: 1px solid #1E293B;
+        display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0;
+        button {
+            background: #1E293B; border: 1px solid #334155; color: #94A3B8;
+            font-size: 10px; padding: 3px 7px; border-radius: 4px; cursor: pointer;
+            &:hover { background: #334155; color: #E2E8F0; }
+        }
+    }
+
+    .ai-inp-row {
+        padding: 8px; border-top: 1px solid #1E293B;
+        display: flex; gap: 6px; flex-shrink: 0;
+
+        .ai-textarea {
+            flex: 1; background: #1E293B; border: 1px solid #334155;
+            color: #E2E8F0; font-size: 12px; padding: 7px 10px;
+            border-radius: 6px; resize: none; line-height: 1.4;
+            &::placeholder { color: #475569; }
+            &:focus { outline: none; border-color: #6366F1; }
+        }
+        .ai-send-btn {
+            width: 38px; height: 38px; border: none;
+            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+            color: #fff; border-radius: 6px; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 13px;
+            &:hover:not(:disabled) { background: linear-gradient(135deg,#4F46E5,#7C3AED); }
+            &:disabled { opacity: .4; cursor: not-allowed; }
+        }
+    }
+}

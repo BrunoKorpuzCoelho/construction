@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<template id="report_boq_document">
+    <t t-call="web.external_layout">
+        <t t-set="doc" t-value="doc"/>
+        <div class="page">
+            <style>
+                .boq-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+                .boq-meta  { font-size: 10px; color: #666; margin-bottom: 16px; }
+                .sec-row-0 { background: #1E3A5F; color: white; font-weight: bold;
+                             padding: 6px 8px; font-size: 11px; margin-top: 10px; }
+                .sec-row-1 { background: #243B55; color: #BAD8F5; font-weight: 600;
+                             padding: 4px 8px 4px 16px; font-size: 10px; }
+                .sec-row-deep { background: #2D4A6A; color: #93C5FD; font-weight: 500;
+                                padding: 4px 8px; font-size: 10px; }
+                .art-row   { font-size: 10px; padding: 3px 8px 3px 24px;
+                             border-bottom: 1px solid #f0f0f0; }
+                .art-row:nth-child(even) { background: #F8FAFC; }
+                .total-row { background: #0F2340; color: white; font-weight: bold;
+                             padding: 8px 8px; font-size: 12px; }
+                .text-right { text-align: right; }
+                table { width: 100%; border-collapse: collapse; }
+                th { background: #334155; color: #CBD5E1; font-size: 9px;
+                     padding: 5px 6px; text-transform: uppercase; }
+                td { padding: 3px 6px; font-size: 10px; }
+            </style>
+
+            <div class="boq-title">
+                <t t-esc="doc.obra_id.display_name"/> —
+                <t t-esc="doc.name"/> <t t-esc="doc.revision_label"/>
+            </div>
+            <div class="boq-meta">
+                Estado: <t t-esc="doc.state"/> |
+                Gerado em: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:90px">Código</th>
+                        <th>Descrição</th>
+                        <th style="width:40px;text-align:center">Un.</th>
+                        <th style="width:80px;text-align:right">Quantidade</th>
+                        <th style="width:90px;text-align:right">P.U. (€)</th>
+                        <th style="width:110px;text-align:right">Total (€)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-set="sections" t-value="doc.env['construction.boq.section'].search(
+                        [('boq_id','=',doc.id)], order='path')"/>
+                    <t t-foreach="sections" t-as="sec">
+                        <!-- Section header row -->
+                        <tr>
+                            <td colspan="6"
+                                t-att-class="'sec-row-0' if sec.depth == 0 else ('sec-row-1' if sec.depth == 1 else 'sec-row-deep')"
+                                t-att-style="'padding-left:' + str(8 + sec.depth * 12) + 'px'">
+                                <t t-esc="sec.code"/> — <t t-esc="sec.name"/>
+                            </td>
+                        </tr>
+                        <!-- Article rows for leaf sections -->
+                        <t t-if="sec.is_leaf">
+                            <t t-set="artigos" t-value="doc.env['construction.boq.artigo'].search(
+                                [('section_id','=',sec.id),('active','=',True)], order='sequence')"/>
+                            <t t-foreach="artigos" t-as="art">
+                                <tr class="art-row">
+                                    <td><t t-esc="art.code"/></td>
+                                    <td><t t-esc="art.name"/></td>
+                                    <td style="text-align:center"><t t-esc="art.uom_id.name"/></td>
+                                    <td style="text-align:right">
+                                        <t t-esc="'{:,.3f}'.format(art.qty_contract)"/>
+                                    </td>
+                                    <td style="text-align:right">
+                                        <t t-esc="'{:,.4f}'.format(art.price_unit)"/>
+                                    </td>
+                                    <td style="text-align:right;font-weight:bold">
+                                        <t t-esc="'{:,.2f}'.format(art.qty_contract * art.price_unit)"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </t>
+                    </t>
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="5">TOTAL GERAL (s/ IVA)</td>
+                        <td style="text-align:right">
+                            <t t-esc="'{:,.2f}'.format(doc.total_boq)"/> €
+                        </td>
+                    </tr>
+                    <tr style="color:#666;font-size:10px">
+                        <td colspan="5">Total c/ IVA 23%</td>
+                        <td style="text-align:right;font-style:italic">
+                            <t t-esc="'{:,.2f}'.format(doc.total_boq * 1.23)"/> €
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </t>
+</template>
+
+</odoo>

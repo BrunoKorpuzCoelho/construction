@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- BOQ: multi-company — users only see BOQs of their company -->
+    <record id="rule_boq_company" model="ir.rule">
+        <field name="name">BOQ: multi-company</field>
+        <field name="model_id" ref="model_construction_boq"/>
+        <field name="domain_force">[('obra_id.company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[Command.link(ref('construction_boq_new.group_boq_user'))]"/>
+    </record>
+
+    <!-- BOQ: regular users see shared/archived BOQs OR their own drafts -->
+    <record id="rule_boq_draft_own" model="ir.rule">
+        <field name="name">BOQ: own drafts or shared</field>
+        <field name="model_id" ref="model_construction_boq"/>
+        <field name="domain_force">['|',
+            ('state', 'in', ['shared', 'archived']),
+            ('user_id', '=', user.id)
+        ]</field>
+        <field name="groups" eval="[Command.link(ref('construction_boq_new.group_boq_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Editors see all BOQs in their company -->
+    <record id="rule_boq_editor_all" model="ir.rule">
+        <field name="name">BOQ: editor sees all in company</field>
+        <field name="model_id" ref="model_construction_boq"/>
+        <field name="domain_force">[('obra_id.company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[Command.link(ref('construction_boq_new.group_boq_editor'))]"/>
+    </record>
+
+    <!-- Project: multi-company -->
+    <record id="rule_obra_company" model="ir.rule">
+        <field name="name">Project: multi-company</field>
+        <field name="model_id" ref="model_construction_obra"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[Command.link(ref('construction_boq_new.group_boq_user'))]"/>
+    </record>
+
+    <!-- Section: multi-company for users -->
+    <record id="rule_section_company" model="ir.rule">
+        <field name="name">Section: multi-company</field>
+        <field name="model_id" ref="model_construction_boq_section"/>
+        <field name="domain_force">[('boq_id.obra_id.company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[Command.link(ref('construction_boq_new.group_boq_user'))]"/>
+    </record>
+
+    <!-- Section: editors see all in company -->
+    <record id="rule_section_editor_all" model="ir.rule">
+        <field name="name">Section: editor sees all in company</field>
+        <field name="model_id" ref="model_construction_boq_section"/>
+        <field name="domain_force">[('boq_id.obra_id.company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[Command.link(ref('construction_boq_new.group_boq_editor'))]"/>
+    </record>
+
+</odoo>

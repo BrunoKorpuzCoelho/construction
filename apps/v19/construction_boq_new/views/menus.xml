@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        ROOT MENU — appears in the Odoo home screen (app switcher).
+        web_icon must point to a real file in static/description/
+        The root menu MUST have an action to be clickable from the home screen.
+        We point it to the Projects action as the landing page.
+    -->
+    <menuitem
+        id="menu_construction_root"
+        name="Construction BOQ"
+        sequence="50"
+        web_icon="construction_boq_new,static/description/icon.png"
+        action="action_construction_overview"/>
+
+    <!-- ── PROJECTS ─────────────────────────────────────────────── -->
+    <menuitem
+        id="menu_construction_projects"
+        name="Projects"
+        parent="menu_construction_root"
+        sequence="10"
+        groups="construction_boq_new.group_boq_user"/>
+
+    <menuitem
+        id="menu_projects_all"
+        name="All Projects"
+        parent="menu_construction_projects"
+        action="action_construction_obra"
+        sequence="10"/>
+
+    <!-- ── BILLS OF QUANTITIES ──────────────────────────────────── -->
+    <menuitem
+        id="menu_construction_boq_root"
+        name="Bills of Quantities"
+        parent="menu_construction_root"
+        sequence="20"
+        groups="construction_boq_new.group_boq_user"/>
+
+    <menuitem
+        id="menu_boq_all"
+        name="All BOQs"
+        parent="menu_construction_boq_root"
+        action="action_construction_boq"
+        sequence="10"/>
+
+    <menuitem
+        id="menu_boq_articles"
+        name="Articles (global search)"
+        parent="menu_construction_boq_root"
+        action="action_construction_boq_artigo"
+        sequence="30"
+        groups="construction_boq_new.group_boq_editor"/>
+
+    <!-- ── CONFIGURATION ────────────────────────────────────────── -->
+    <menuitem
+        id="menu_construction_config"
+        name="Configuration"
+        parent="menu_construction_root"
+        sequence="90"
+        groups="construction_boq_new.group_boq_manager"/>
+
+</odoo>

@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="construction_boq_new.BOQEditor">
+<div class="boq-root">
+
+    <!-- LOADING -->
+    <t t-if="state.loading">
+        <div class="boq-splash">
+            <div class="boq-spinner"/>
+            <p>Loading BOQ…</p>
+        </div>
+    </t>
+
+    <!-- LOADED -->
+    <t t-elif="state.sections !== null">
+
+    <!-- TOP BAR -->
+    <div class="boq-topbar">
+        <div class="boq-tb-left">
+            <span class="boq-app-icon"><i class="fa fa-building-o"/></span>
+            <div class="boq-tb-info">
+                <span class="boq-tb-project" t-esc="props.action?.context?.project_name || ''"/>
+                <span class="boq-tb-sep">/</span>
+                <span class="boq-tb-name" t-esc="props.action?.context?.boq_name || ''"/>
+            </div>
+        </div>
+        <div class="boq-tb-actions">
+            <t t-if="!state.readonly">
+                <button class="btn btn-primary btn-sm boq-btn-main"
+                        t-on-click="addArticle"
+                        title="Add article">
+                    <i class="fa fa-plus"/> Article
+                </button>
+                <button class="btn btn-secondary btn-sm"
+                        t-on-click="() => addSection(null)">
+                    <i class="fa fa-folder-o"/> Section
+                </button>
+                <div class="boq-divider"/>
+                <button class="btn btn-secondary btn-sm" t-on-click="openImport">
+                    <i class="fa fa-upload"/> Import
+                </button>
+            </t>
+            <button class="btn btn-secondary btn-sm" t-on-click="exportClient">
+                <i class="fa fa-file-excel-o"/> Export
+            </button>
+            <div class="boq-divider"/>
+            <label class="boq-stock-toggle">
+                <input type="checkbox"
+                       t-att-checked="state.showStock"
+                       t-on-change="() => { state.showStock = !state.showStock; }"/>
+                <span>Stock</span>
+            </label>
+            <div class="boq-divider"/>
+            <button t-att-class="'btn btn-sm boq-ai-btn' + (state.aiOpen ? ' active' : '')"
+                    t-on-click="toggleAI">
+                <i class="fa fa-magic"/> AI
+            </button>
+        </div>
+    </div>
+
+    <!-- 3-COLUMN BODY -->
+    <div class="boq-body" t-att-class="state.aiOpen ? 'has-ai' : ''">
+
+        <!-- LEFT: Tree (infinite hierarchy) -->
+        <nav class="boq-tree">
+            <div class="boq-tree-head">
+                <span>STRUCTURE</span>
+                <button t-if="!state.readonly" class="boq-icon-btn"
+                        t-on-click="() => addSection(null)" title="Add root section">+</button>
+            </div>
+            <div class="boq-tree-scroll">
+                <t t-foreach="visibleSections" t-as="sec" t-key="sec.id">
+                    <div
+                        t-att-class="'boq-sec-row depth-' + sec.depth
+                            + (state.selectedSectionId === sec.id ? ' sel' : '')
+                            + (!sec.is_leaf ? ' is-group' : '')"
+                        t-att-style="'padding-left:' + (10 + sec.depth * 16) + 'px'"
+                        t-on-click="() => selectSection(sec.id)">
+
+                        <span class="boq-chevron" t-if="!sec.is_leaf">
+                            <t t-if="state.expandedIds.has(sec.id)">▾</t>
+                            <t t-else="">▸</t>
+                        </span>
+                        <span class="boq-leaf-icon" t-else="">›</span>
+
+                        <div class="boq-sec-text">
+                            <b t-esc="sec.code"/>
+                            <span t-esc="sec.name"/>
+                        </div>
+
+                        <span class="boq-sec-val" t-if="!sec.is_leaf">
+                            <t t-esc="fmtMoney(sec.total || 0)"/>
+                        </span>
+                        <span class="boq-sec-cnt" t-if="sec.is_leaf">
+                            <t t-esc="(state.secTotals[sec.id] || {}).cnt || sec.artigo_count || 0"/>
+                        </span>
+
+                        <button t-if="!state.readonly"
+                                class="boq-addsec-btn"
+                                t-on-click.stop="(ev) => addSection(sec.id)"
+                                title="Add child section">+</button>
+                    </div>
+                </t>
+            </div>
+            <div class="boq-tree-foot">
+                <span class="boq-grand-lbl">TOTAL</span>
+                <span class="boq-grand-val"><t t-esc="fmtMoney(state.grandTotal)"/> €</span>
+            </div>
+        </nav>
+
+        <!-- CENTRE: Articles -->
+        <main class="boq-content">
+            <!-- Breadcrumb + search -->
+            <div class="boq-content-bar">
+                <div class="boq-breadcrumb">
+                    <t t-if="selectedSection">
+                        <span class="bc-cap">
+                            <b t-esc="selectedSection.code"/>
+                            <t t-esc="' — ' + selectedSection.name"/>
+                        </span>
+                    </t>
+                    <t t-else="">
+                        <span class="bc-hint">Select a leaf section to view articles</span>
+                    </t>
+                </div>
+                <div class="boq-search-wrap">
+                    <i class="fa fa-search boq-search-icon"/>
+                    <input class="boq-search-inp" type="text"
+                           placeholder="Filter articles…"
+                           t-att-value="state.search"
+                           t-on-input="onSearch"/>
+                    <span class="boq-art-cnt"><t t-esc="state.articlesTotal"/> articles</span>
+                </div>
+            </div>
+
+            <!-- Sibling leaf section tabs -->
+            <div class="boq-subtabs" t-if="selectedSection">
+                <t t-set="parentId" t-value="selectedSection.parent_id"/>
+                <t t-foreach="state.sections.filter(s => s.parent_id === parentId and s.is_leaf)"
+                   t-as="sib" t-key="sib.id">
+                    <button
+                        t-att-class="'boq-subtab' + (state.selectedSectionId === sib.id ? ' active' : '')"
+                        t-on-click="() => selectSection(sib.id)">
+                        <b t-esc="sib.code"/>
+                        <span class="subtab-cnt">
+                            (<t t-esc="(state.secTotals[sib.id] || {}).cnt || sib.artigo_count || 0"/>)
+                        </span>
+                    </button>
+                </t>
+                <t t-if="!state.readonly">
+                    <button class="boq-subtab add"
+                            t-on-click="() => addSection(selectedSection.parent_id)">
+                        + section
+                    </button>
+                </t>
+            </div>
+
+            <!-- Table -->
+            <div class="boq-table-wrap">
+                <table class="boq-table">
+                    <colgroup>
+                        <col class="col-code"/>
+                        <col class="col-name"/>
+                        <col class="col-uom"/>
+                        <col class="col-qty"/>
+                        <col class="col-pu"/>
+                        <col class="col-total"/>
+                        <t t-if="state.showStock"><col class="col-stock"/></t>
+                        <col class="col-obs"/>
+                        <t t-if="!state.readonly"><col class="col-del"/></t>
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th class="c">Unit</th>
+                            <th class="r">Qty</th>
+                            <th class="r">Unit Price €</th>
+                            <th class="r">Total €</th>
+                            <t t-if="state.showStock"><th class="c">On Hand</th></t>
+                            <th>Notes</th>
+                            <t t-if="!state.readonly"><th/></t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-if="state.loadingArticles">
+                            <tr><td colspan="9" class="td-center">
+                                <div class="boq-spinner-sm"/> Loading…
+                            </td></tr>
+                        </t>
+                        <t t-else="">
+                            <t t-foreach="state.articles" t-as="art" t-key="art.id || art_index">
+                                <tr t-att-class="art_index % 2 === 0 ? 'row-even' : 'row-odd'">
+                                    <td>
+                                        <t t-call="construction_boq_new.Cell">
+                                            <t t-set="art" t-value="art"/>
+                                            <t t-set="field" t-value="'code'"/>
+                                            <t t-set="val" t-value="art.code || ''"/>
+                                            <t t-set="isNum" t-value="false"/>
+                                            <t t-set="readonly" t-value="state.readonly"/>
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <t t-call="construction_boq_new.Cell">
+                                            <t t-set="art" t-value="art"/>
+                                            <t t-set="field" t-value="'name'"/>
+                                            <t t-set="val" t-value="art.name || ''"/>
+                                            <t t-set="isNum" t-value="false"/>
+                                            <t t-set="readonly" t-value="state.readonly"/>
+                                        </t>
+                                    </td>
+                                    <td class="td-uom">
+                                        <t t-if="!state.readonly">
+                                            <select class="boq-uom-sel"
+                                                    t-on-change="(ev) => onUomChange(art, ev)">
+                                                <option value="">—</option>
+                                                <t t-foreach="state.uoms" t-as="u" t-key="u.id">
+                                                    <option t-att-value="u.id"
+                                                            t-att-selected="art.uom_id === u.id">
+                                                        <t t-esc="u.name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="uom-ro" t-esc="art.uom_name || '—'"/>
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <t t-call="construction_boq_new.Cell">
+                                            <t t-set="art" t-value="art"/>
+                                            <t t-set="field" t-value="'qty_contract'"/>
+                                            <t t-set="val" t-value="fmtQty(art.qty_contract)"/>
+                                            <t t-set="isNum" t-value="true"/>
+                                            <t t-set="readonly" t-value="state.readonly"/>
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <t t-call="construction_boq_new.Cell">
+                                            <t t-set="art" t-value="art"/>
+                                            <t t-set="field" t-value="'price_unit'"/>
+                                            <t t-set="val" t-value="fmtMoney(art.price_unit)"/>
+                                            <t t-set="isNum" t-value="true"/>
+                                            <t t-set="readonly" t-value="state.readonly"/>
+                                        </t>
+                                    </td>
+                                    <td class="td-total">
+                                        <t t-esc="fmtMoney((art.qty_contract || 0) * (art.price_unit || 0))"/>
+                                    </td>
+                                    <t t-if="state.showStock">
+                                        <td class="td-stock">
+                                            <t t-if="art.product_id">
+                                                <span t-att-class="'stock-pill ' + ((art.qty_on_hand || 0) > 0 ? 'in' : 'out')">
+                                                    <t t-esc="fmtQty(art.qty_on_hand || 0)"/>
+                                                </span>
+                                            </t>
+                                            <t t-else=""><span class="stock-na">—</span></t>
+                                        </td>
+                                    </t>
+                                    <td>
+                                        <t t-call="construction_boq_new.Cell">
+                                            <t t-set="art" t-value="art"/>
+                                            <t t-set="field" t-value="'obs'"/>
+                                            <t t-set="val" t-value="art.obs || ''"/>
+                                            <t t-set="isNum" t-value="false"/>
+                                            <t t-set="readonly" t-value="state.readonly"/>
+                                        </t>
+                                    </td>
+                                    <t t-if="!state.readonly">
+                                        <td class="td-del">
+                                            <button class="btn-del"
+                                                    t-on-click="() => deleteArticle(art)">✕</button>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </t>
+                            <t t-if="!state.articles.length and !state.loadingArticles">
+                                <tr><td colspan="9" class="td-empty">
+                                    No articles.
+                                    <t t-if="!state.readonly">
+                                        <a href="#" t-on-click.prevent="addArticle">Add first article</a>
+                                    </t>
+                                </td></tr>
+                            </t>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div class="boq-foot">
+                <div class="boq-foot-left">
+                    <t t-if="!state.readonly">
+                        <button class="btn btn-sm boq-add-row-btn" t-on-click="addArticle">
+                            <i class="fa fa-plus"/> Add article
+                        </button>
+                    </t>
+                </div>
+                <div class="boq-foot-pag" t-if="totalPages > 1">
+                    <button class="btn btn-sm" t-on-click="prevPage"
+                            t-att-disabled="state.page === 0">‹</button>
+                    <span><t t-esc="state.page + 1"/> / <t t-esc="totalPages"/></span>
+                    <button class="btn btn-sm" t-on-click="nextPage"
+                            t-att-disabled="state.page >= totalPages - 1">›</button>
+                </div>
+                <div class="boq-foot-totals">
+                    <span class="ft-lbl">Section:</span>
+                    <span class="ft-val">
+                        <t t-esc="fmtMoney(selectedSection ? (selectedSection.total || 0) : 0)"/> €
+                    </span>
+                    <span class="ft-lbl">Grand Total:</span>
+                    <span class="ft-grand"><t t-esc="fmtMoney(state.grandTotal)"/> €</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT: AI -->
+        <aside class="boq-ai" t-if="state.aiOpen">
+            <div class="ai-head">
+                <i class="fa fa-magic"/> AI BOQ Assistant
+                <button class="ai-close" t-on-click="toggleAI">✕</button>
+            </div>
+            <div class="ai-msgs" t-ref="aiScroll">
+                <t t-foreach="state.aiMessages" t-as="msg" t-key="msg_index">
+                    <div t-att-class="'ai-msg ' + msg.role">
+                        <div class="ai-bubble">
+                            <div t-out="mdHtml(msg.content)"/>
+                            <div class="ai-ts">
+                                <t t-esc="msg.ts"/>
+                                <t t-if="msg.source === 'odoo_ai'">
+                                    <span class="src-pill odoo">Odoo AI</span>
+                                </t>
+                                <t t-elif="msg.source === 'openai'">
+                                    <span class="src-pill openai">OpenAI</span>
+                                </t>
+                                <t t-elif="msg.source === 'builtin'">
+                                    <span class="src-pill builtin">Built-in</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <t t-if="state.aiLoading">
+                    <div class="ai-msg assistant">
+                        <div class="ai-bubble ai-typing"><span/><span/><span/></div>
+                    </div>
+                </t>
+            </div>
+            <div class="ai-quick">
+                <button t-on-click="() => sendSuggested('Show total value breakdown by section')">💰 Totals</button>
+                <button t-on-click="() => sendSuggested('Which are the largest sections?')">📊 Top</button>
+                <button t-on-click="() => sendSuggested('Breakdown by specialty')">🏗️ Specialty</button>
+                <button t-on-click="() => sendSuggested('How many articles per section?')">📋 Counts</button>
+            </div>
+            <div class="ai-inp-row">
+                <textarea class="ai-textarea"
+                          placeholder="Ask anything about this BOQ…"
+                          rows="2"
+                          t-att-value="state.aiInput"
+                          t-on-input="(ev) => { state.aiInput = ev.target.value; }"
+                          t-on-keydown="onAIKeyDown"/>
+                <button class="ai-send-btn"
+                        t-att-disabled="!state.aiInput.trim() || state.aiLoading"
+                        t-on-click="sendAI">
+                    <t t-if="state.aiLoading"><div class="boq-spinner-sm"/></t>
+                    <t t-else=""><i class="fa fa-paper-plane"/></t>
+                </button>
+            </div>
+        </aside>
+
+    </div>
+    </t>
+
+    <!-- Failed to load -->
+    <t t-else="">
+        <div class="boq-splash">
+            <i class="fa fa-exclamation-triangle fa-3x text-warning"/>
+            <p>Could not load BOQ. Check server logs.</p>
+        </div>
+    </t>
+
+</div>
+</t>
+
+<!-- CELL sub-template -->
+<t t-name="construction_boq_new.Cell">
+    <t t-if="!readonly">
+        <input type="text"
+               t-att-class="'cell-inp' + (isNum ? ' num' : '')"
+               t-att-value="val"
+               t-on-change="(ev) => saveCell(art, field, isNum ? parseNum(ev.target.value) : ev.target.value)"
+               t-on-keydown="onCellKeydown"/>
+    </t>
+    <t t-else="">
+        <span t-att-class="'cell-ro' + (isNum ? ' num' : '')" t-esc="val"/>
+    </t>
+</t>
+
+</templates>

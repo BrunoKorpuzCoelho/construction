@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!-- ══════════════════════════ EXPORT WIZARD ════════════════════════════ -->
+<record id="view_boq_export_wizard_form" model="ir.ui.view">
+    <field name="name">construction.boq.export.wizard.form</field>
+    <field name="model">construction.boq.export.wizard</field>
+    <field name="arch" type="xml">
+        <form string="Export BOQ to Excel">
+            <group invisible="state == 'done'">
+                <field name="boq_id"/>
+                <field name="export_type" widget="radio"/>
+                <field name="include_obs"/>
+                <field name="include_stock"
+                       invisible="export_type != 'internal'"/>
+            </group>
+            <group invisible="state != 'done'">
+                <field name="file_data" filename="file_name" widget="binary"
+                       string="Download File"/>
+                <field name="file_name" invisible="1"/>
+            </group>
+            <footer>
+                <button name="action_export" type="object" string="Export"
+                        class="btn-primary"
+                        invisible="state == 'done'"/>
+                <button special="cancel" string="Close"/>
+            </footer>
+        </form>
+    </field>
+</record>
+
+<record id="action_boq_export_wizard" model="ir.actions.act_window">
+    <field name="name">Export BOQ</field>
+    <field name="res_model">construction.boq.export.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+</record>
+
+<!-- ══════════════════════════ IMPORT WIZARD ════════════════════════════ -->
+<record id="view_boq_import_wizard_form" model="ir.ui.view">
+    <field name="name">construction.boq.import.wizard.form</field>
+    <field name="model">construction.boq.import.wizard</field>
+    <field name="arch" type="xml">
+        <form string="Import BOQ from Excel">
+            <group invisible="state != 'upload'">
+                <field name="boq_id"/>
+                <field name="file_data" filename="file_name"
+                       widget="binary" string="Excel File (.xlsx)"/>
+                <field name="file_name" invisible="1"/>
+                <field name="mode" widget="radio"/>
+            </group>
+            <group invisible="state != 'preview'">
+                <field name="boq_id" readonly="1"/>
+                <field name="mode" readonly="1"/>
+                <div class="alert alert-info" role="alert">
+                    <field name="preview_lines" readonly="1" nolabel="1"/>
+                </div>
+            </group>
+            <group invisible="state != 'done'">
+                <div class="alert alert-success" role="alert">
+                    <strong>Import complete!</strong>
+                    <field name="import_log" readonly="1" nolabel="1"/>
+                </div>
+            </group>
+            <div class="alert alert-warning" role="alert"
+                 invisible="state != 'upload'">
+                <strong>Expected Excel format:</strong>
+                Col A: Code | B: Description | C: Unit | D: Qty | E: Unit Price | F: Total (ignored) | G: Notes
+                <br/>Row codes: 01 = Chapter | 01.02 = Sub-Chapter | 01.02.03 = Article
+            </div>
+            <footer>
+                <button name="action_preview" type="object" string="Preview"
+                        class="btn-secondary"
+                        invisible="state != 'upload'"/>
+                <button name="action_import" type="object" string="Import"
+                        class="btn-primary"
+                        invisible="state != 'preview'"/>
+                <button special="cancel" string="Close"/>
+            </footer>
+        </form>
+    </field>
+</record>
+
+<record id="action_boq_import_wizard" model="ir.actions.act_window">
+    <field name="name">Import BOQ</field>
+    <field name="res_model">construction.boq.import.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+</record>
+
+</odoo>

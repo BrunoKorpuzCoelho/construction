@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── Module category (section header in Access Rights tab) ───────────── -->
+    <record id="module_category_construction_boq" model="ir.module.category">
+        <field name="name">Construction</field>
+        <field name="description">Construction project and BOQ management</field>
+        <field name="sequence">100</field>
+    </record>
+
+    <!-- ── Privilege (row label in Access Rights tab) ──────────────────────── -->
+    <!-- res.groups.privilege is the Odoo 19 replacement for category_id on res.groups -->
+    <record id="privilege_construction_boq" model="res.groups.privilege">
+        <field name="name">BOQ</field>
+        <field name="category_id" ref="module_category_construction_boq"/>
+    </record>
+
+    <!-- ── Groups (options for the BOQ privilege row) ──────────────────────── -->
+
+    <!-- User: read shared BOQs -->
+    <record id="group_boq_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="privilege_id" ref="privilege_construction_boq"/>
+        <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Editor: create and edit draft BOQs -->
+    <record id="group_boq_editor" model="res.groups">
+        <field name="name">Editor</field>
+        <field name="privilege_id" ref="privilege_construction_boq"/>
+        <field name="implied_ids" eval="[Command.link(ref('construction_boq_new.group_boq_user'))]"/>
+    </record>
+
+    <!-- Manager: share, archive, create revisions -->
+    <record id="group_boq_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="privilege_id" ref="privilege_construction_boq"/>
+        <field name="implied_ids" eval="[Command.link(ref('construction_boq_new.group_boq_editor'))]"/>
+    </record>
+
+</odoo>
